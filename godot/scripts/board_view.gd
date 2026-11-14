@@ -14,10 +14,14 @@ const COLORS := [
 ]
 const CREAM := Color("#FBF6EA")
 const INK := Color("#2A2620")
+## Peg positions measured from the board artwork (cells, relative to the yard origin)
+## so tokens sit exactly on the four pegs the image draws in every yard.
 const YARD_SLOTS := [
-	Vector2(1.5, 1.5), Vector2(4.5, 1.5),
-	Vector2(1.5, 4.5), Vector2(4.5, 4.5),
+	Vector2(2.19, 2.23), Vector2(3.72, 2.21),
+	Vector2(2.19, 3.77), Vector2(3.72, 3.76),
 ]
+## Direction each colour's finished tokens stack in, from the board centre.
+const HOME_DIR := [Vector2(-1, 0), Vector2(0, -1), Vector2(1, 0), Vector2(0, 1)]
 
 var game: LudoEngine
 var legal: Array = []
@@ -44,7 +48,8 @@ func cell_size() -> float:
 
 
 func token_radius() -> float:
-	return cell_size() * 0.33
+	# Same size as the pegs printed on the board, so a token never spills over a cell edge.
+	return cell_size() * 0.42
 
 
 func cell_center(x: int, y: int) -> Vector2:
@@ -65,8 +70,8 @@ func token_position(seat: Dictionary, token_index: int) -> Vector2:
 		return yard_position(color, token_index)
 	if progress >= Topology.PROGRESS_HOME:
 		var center := cell_center(Topology.CENTER, Topology.CENTER)
-		var angle := TAU * float(color) / 4.0 + TAU * float(token_index) / 18.0
-		return center + Vector2(cos(angle), sin(angle)) * cell_size() * 0.33
+		var direction: Vector2 = HOME_DIR[color]
+		return center + direction * cell_size() * (0.34 + 0.22 * float(token_index))
 	var cell := Topology.progress_cell(color, progress)
 	return cell_center(cell.x, cell.y)
 
@@ -95,34 +100,41 @@ func _clean_yards() -> void:
 func _draw_tokens() -> void:
 	var c := cell_size()
 	var radius := token_radius()
-	var occupancy := {}
-	var placements: Array = []
+	var groups := {}
+	var order := []
 
 	for seat in game.seats:
 		var tokens: Array = seat["tokens"]
 		for index in tokens.size():
 			var pos := token_position(seat, index)
 			var key := pos.round()
-			var count := int(occupancy.get(key, 0))
-			occupancy[key] = count + 1
-			placements.append({
-				"pos": pos, "count": count, "color": int(seat["color"]),
+			if not groups.has(key):
+				groups[key] = []
+				order.append(key)
+			groups[key].append({
+				"pos": pos, "color": int(seat["color"]),
 				"index": index, "seat": int(seat["index"]),
 			})
 
-	for entry in placements:
-		var pos: Vector2 = entry["pos"]
-		var count := int(entry["count"])
-		if count > 0:
-			pos += Vector2(c * 0.16 * count, c * 0.09 * count)
-		var color: Color = COLORS[int(entry["color"])]
-		var is_legal := int(entry["seat"]) == game.active_seat and legal.has(int(entry["index"]))
-		draw_circle(pos, radius * 1.12, INK)
-		draw_circle(pos, radius, color)
-		draw_circle(pos + Vector2(-radius * 0.22, -radius * 0.22), radius * 0.34, Color(1, 1, 1, 0.55))
-		if is_legal:
-			draw_arc(pos, radius * 1.5, 0.0, TAU, 40, Color("#FFFFFF"), maxf(2.0, c * 0.09))
-			draw_arc(pos, radius * 1.72, 0.0, TAU, 40, Color("#2A2620"), maxf(1.0, c * 0.035))
+	for key in order:
+		var entries: Array = groups[key]
+		var count := entries.size()
+		for i in count:
+			var entry: Dictionary = entries[i]
+			var pos: Vector2 = entry["pos"]
+			var draw_radius := radius
+			if count > 1:
+				var angle := TAU * float(i) / float(count) - PI * 0.5
+				pos += Vector2(cos(angle), sin(angle)) * c * 0.15
+				draw_radius = radius * 0.7
+			var color: Color = COLORS[int(entry["color"])]
+			var is_legal := int(entry["seat"]) == game.active_seat and legal.has(int(entry["index"]))
+			if is_legal:
+				draw_circle(pos, draw_radius * 1.16, Color("#FFFFFF"))
+			draw_circle(pos, draw_radius, color)
+			draw_circle(pos + Vector2(-draw_radius * 0.26, -draw_radius * 0.26), draw_radius * 0.32,
+				Color(1, 1, 1, 0.5))
+			draw_arc(pos, draw_radius, 0.0, TAU, 32, INK, maxf(1.0, c * 0.04))
 
 
 func _input(event: InputEvent) -> void:
