@@ -86,5 +86,45 @@ func _initialize() -> void:
 		push_error("Board view has no size")
 		failures += 1
 
+
+	# ---- Every token must sit centred in its own cell / peg --------------
+	var bv: BoardView = local.view
+	bv.board_size = 600.0
+	var cell: float = bv.cell_size()
+	var misplaced := 0
+	for color in 4:
+		var probe := {"color": color, "tokens": [-1, -1, -1, -1]}
+		for progress in range(0, Topology.PROGRESS_HOME):
+			probe["tokens"] = [progress, -1, -1, -1]
+			var pos: Vector2 = bv.token_position(probe, 0)
+			var target := Topology.progress_cell(color, progress)
+			var centre: Vector2 = bv.cell_center(target.x, target.y)
+			if pos.distance_to(centre) > 0.6:
+				push_error("Colour %d progress %d token is %.2f px off its cell centre" % [
+					color, progress, pos.distance_to(centre)])
+				misplaced += 1
+		probe["tokens"] = [-1, -1, -1, -1]
+		var origin := Topology.yard_origin(color)
+		for token in 4:
+			var yard_pos: Vector2 = bv.token_position(probe, token)
+			var slot: Vector2 = BoardView.YARD_SLOTS[token]
+			var expected := Vector2(origin.x + slot.x, origin.y + slot.y) * cell
+			if yard_pos.distance_to(expected) > 0.6:
+				push_error("Colour %d yard token %d is not on its peg" % [color, token])
+				misplaced += 1
+		probe["tokens"] = [Topology.PROGRESS_HOME, -1, -1, -1]
+		var home_pos: Vector2 = bv.token_position(probe, 0)
+		var centre_block := Rect2(Vector2(6.0, 6.0) * cell, Vector2(3.0, 3.0) * cell)
+		if not centre_block.has_point(home_pos):
+			push_error("Colour %d home token is outside the centre" % color)
+			misplaced += 1
+	if bv.token_radius() > cell * 0.5:
+		push_error("Token radius %.2f does not fit inside a %.2f cell" % [bv.token_radius(), cell])
+		misplaced += 1
+	if misplaced > 0:
+		failures += 1
+	else:
+		print("ok   all tokens centred on their cells and pegs")
+
 	print("UI RESULT failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
