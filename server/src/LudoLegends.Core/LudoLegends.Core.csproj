@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    LudoLegends.Core is the single source of truth for Ludo rules and board geometry.
+
+    It targets netstandard2.1 and C# 9 with NO external NuGet dependencies so that the
+    exact same source files can be compiled by:
+      * the authoritative server (net8.0)
+      * the Unity 6 client (copy via tools/sync-core.sh into Assets/Scripts/Shared)
+
+    Do not add package references here, and do not use C# 10+ syntax
+    (file-scoped namespaces, global usings, records with primary constructors),
+    because Unity's C# compiler for Unity 6 is C# 9.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>LudoLegends.Core</AssemblyName>
+    <RootNamespace>LudoLegends.Core</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+</Project>
