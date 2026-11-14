@@ -6,10 +6,10 @@ extends Node2D
 signal token_tapped(token_index: int)
 
 const COLORS := [
-	Color("#E2453C"), # red
-	Color("#2F6FE0"), # blue
-	Color("#28A745"), # green
-	Color("#F2B01E"), # yellow
+	Color("#F02B33"), # red    (top-left)
+	Color("#078EFF"), # blue   (top-right)
+	Color("#1FCA01"), # green  (bottom-left)
+	Color("#FFB407"), # orange (bottom-right)
 ]
 const BOARD_BG := Color("#FBF6EA")
 const CELL_BG := Color("#FFFFFF")
@@ -113,15 +113,14 @@ func _draw_center(c: float) -> void:
 	var bottom_right := origin + corner
 	var bottom_left := origin + Vector2(0, corner.y)
 	var mid_top := origin + Vector2(corner.x * 0.5, 0)
-	var mid_bottom := origin + Vector2(corner.x * 0.5, corner.y)
-	var mid_left := origin + Vector2(0, corner.y * 0.5)
 	var mid_right := origin + Vector2(corner.x, corner.y * 0.5)
 	var center := origin + corner * 0.5
 
-	draw_colored_polygon(PackedVector2Array([mid_left, top_left, mid_top, center]), COLORS[0])
-	draw_colored_polygon(PackedVector2Array([mid_top, top_right, mid_right, center]), COLORS[1])
-	draw_colored_polygon(PackedVector2Array([mid_right, bottom_right, mid_bottom, center]), COLORS[2])
-	draw_colored_polygon(PackedVector2Array([mid_bottom, bottom_left, mid_left, center]), COLORS[3])
+	# Centre home triangles: left = red, top = blue, right = orange, bottom = green.
+	draw_colored_polygon(PackedVector2Array([top_left, bottom_left, center]), COLORS[0])
+	draw_colored_polygon(PackedVector2Array([top_left, top_right, center]), COLORS[1])
+	draw_colored_polygon(PackedVector2Array([top_right, bottom_right, center]), COLORS[3])
+	draw_colored_polygon(PackedVector2Array([bottom_left, bottom_right, center]), COLORS[2])
 	draw_rect(Rect2(origin, corner), CELL_LINE, false, maxf(1.0, c * 0.05))
 
 
