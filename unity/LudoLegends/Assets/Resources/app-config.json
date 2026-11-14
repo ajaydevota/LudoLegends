@@ -1,0 +1,15 @@
+{
+  "apiBaseUrl": "http://10.0.2.2:5080",
+  "socketUrl": "",
+  "googleWebClientId": "",
+  "photonAppId": "",
+  "photonVoiceAppId": "",
+  "adsEnabled": false,
+  "admobBannerUnitId": "",
+  "admobInterstitialUnitId": "",
+  "admobRewardedUnitId": "",
+  "iapEnabled": false,
+  "iapRemoveAdsProductId": "remove_ads",
+  "voiceEnabled": false,
+  "turnTimeoutSeconds": 25
+}
