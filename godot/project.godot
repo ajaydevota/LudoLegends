@@ -10,6 +10,9 @@ config/description="Classic Ludo with three bots. Offline, no internet needed."
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.078, 0.067, 0.055, 1)
+boot_splash/image=""
 
 [display]
 
