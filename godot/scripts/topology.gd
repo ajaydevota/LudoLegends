@@ -17,13 +17,15 @@ const CENTER := 7
 const RING_X := [6, 7, 8, 8, 8, 8, 8, 8, 9, 10, 11, 12, 13, 14, 14, 14, 13, 12, 11, 10, 9, 8, 8, 8, 8, 8, 8, 7, 6, 6, 6, 6, 6, 6, 5, 4, 3, 2, 1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 6, 6, 6, 6]
 const RING_Y := [0, 0, 0, 1, 2, 3, 4, 5, 6, 6, 6, 6, 6, 6, 7, 8, 8, 8, 8, 8, 8, 9, 10, 11, 12, 13, 14, 14, 14, 13, 12, 11, 10, 9, 8, 8, 8, 8, 8, 8, 7, 6, 6, 6, 6, 6, 6, 5, 4, 3, 2, 1]
 
-## Red, Blue, Green, Yellow (clockwise from top-left).
-const START_OFFSETS := [41, 2, 15, 28]
-const SAFE_CELLS := [2, 10, 15, 23, 28, 36, 41, 49]
-const YARD_X := [0, 9, 9, 0]
+## Red (top-left), Blue (top-right), Green (bottom-left), Orange (bottom-right).
+## Each colour's home column sits in the arm on its own side of the board:
+## Red = left arm, Blue = top arm, Green = bottom arm, Orange = right arm.
+const START_OFFSETS := [42, 3, 29, 16]
+const SAFE_CELLS := [42, 3, 29, 16, 50, 11, 37, 24]
+const YARD_X := [0, 9, 0, 9]
 const YARD_Y := [0, 0, 9, 9]
-const HOME_COL_X := [[1, 2, 3, 4, 5], [7, 7, 7, 7, 7], [13, 12, 11, 10, 9], [7, 7, 7, 7, 7]]
-const HOME_COL_Y := [[7, 7, 7, 7, 7], [1, 2, 3, 4, 5], [7, 7, 7, 7, 7], [13, 12, 11, 10, 9]]
+const HOME_COL_X := [[1, 2, 3, 4, 5], [7, 7, 7, 7, 7], [7, 7, 7, 7, 7], [13, 12, 11, 10, 9]]
+const HOME_COL_Y := [[7, 7, 7, 7, 7], [1, 2, 3, 4, 5], [13, 12, 11, 10, 9], [7, 7, 7, 7, 7]]
 const BASE_SLOT_X := [1, 4, 1, 4]
 const BASE_SLOT_Y := [1, 1, 4, 4]
 
@@ -73,8 +75,8 @@ static func progress_cell(color: int, progress: int) -> Vector2i:
 static func colors_for_seat_count(count: int) -> Array:
 	match count:
 		2:
-			return [0, 2]
+			return [0, 3]
 		3:
-			return [0, 1, 2]
+			return [0, 1, 3]
 		_:
 			return [0, 1, 2, 3]
