@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>LudoLegends.Server</RootNamespace>
+    <AssemblyName>LudoLegends.Server</AssemblyName>
+    <UserSecretsId>ludo-legends-server</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Database: SQLite for local development and tests, PostgreSQL for production. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.*" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.*" />
+
+    <!-- Self-issued session tokens for REST + WebSocket authentication. -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.*" />
+
+    <!-- Google Sign-In ID token validation against Google's published JWKS. -->
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LudoLegends.Core\LudoLegends.Core.csproj" />
+  </ItemGroup>
+
+</Project>
