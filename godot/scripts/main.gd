@@ -1,194 +1,194 @@
 extends Control
 
-## Ludo Legends — offline Ludo for Android.
-## Board is drawn at runtime; the rules live in LudoEngine, the bot in LudoAI.
+## App router: home skin, mode setup, game screen.
 
-var game: LudoEngine
-var view: BoardView
-var status_label: Label
-var roll_button: Button
-var restart_button: Button
-var rng := RandomNumberGenerator.new()
-var cooldown := 0.0
-var pending_auto := -1
+const BG := Color("#14110E")
+const INK := Color("#F5EFE3")
+const DIM := Color("#A79C8A")
+const RED := Color("#E2453C")
+const BLUE := Color("#2F6FE0")
+const GREEN := Color("#28A745")
+const YELLOW := Color("#F2B01E")
+const GOLD := Color("#E2A03C")
+
+var current: Control = null
 
 
 func _ready() -> void:
-	rng.randomize()
-	_build_ui()
-	_layout()
-	_new_game()
+	_show_home()
 
 
-func _build_ui() -> void:
+func _swap(new_screen: Control) -> void:
+	if current != null and is_instance_valid(current):
+		current.queue_free()
+	current = new_screen
+	add_child(current)
+	current.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+
+func _background(parent: Control) -> void:
 	var bg := ColorRect.new()
-	bg.color = Color("#14110E")
+	bg.color = BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-
-	view = BoardView.new()
-	add_child(view)
-	view.token_tapped.connect(_on_token_tapped)
-
-	status_label = Label.new()
-	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status_label.add_theme_font_size_override("font_size", 26)
-	status_label.add_theme_color_override("font_color", Color("#F5EFE3"))
-	add_child(status_label)
-
-	roll_button = Button.new()
-	roll_button.text = "ROLL"
-	roll_button.add_theme_font_size_override("font_size", 34)
-	roll_button.pressed.connect(_on_roll_pressed)
-	add_child(roll_button)
-
-	restart_button = Button.new()
-	restart_button.text = "New game"
-	restart_button.add_theme_font_size_override("font_size", 20)
-	restart_button.pressed.connect(_new_game)
-	add_child(restart_button)
+	parent.add_child(bg)
 
 
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED and is_instance_valid(view):
-		_layout()
+func _label(text: String, size: int, color: Color = INK, align: int = HORIZONTAL_ALIGNMENT_CENTER) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = align
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_color_override("font_color", color)
+	return label
 
 
-func _layout() -> void:
-	var w := size.x
-	var h := size.y
-	if w <= 0.0 or h <= 0.0:
-		return
-	var margin := 14.0
-	var top := 92.0
-	var bottom := 172.0
-	var board := minf(w - margin * 2.0, h - top - bottom - margin)
-	board = maxf(board, 220.0)
-	view.board_size = board
-	view.position = Vector2((w - board) * 0.5, top + maxf(0.0, (h - top - bottom - board) * 0.5))
-	view.queue_redraw()
-
-	status_label.position = Vector2(margin, margin)
-	status_label.size = Vector2(w - margin * 2.0, top - margin)
-
-	var button_width := minf(w - margin * 2.0, 440.0)
-	roll_button.size = Vector2(button_width, 92)
-	roll_button.position = Vector2((w - button_width) * 0.5, h - bottom + 14)
-	var small := button_width * 0.55
-	restart_button.size = Vector2(small, 48)
-	restart_button.position = Vector2((w - small) * 0.5, h - bottom + 118)
+func _button(text: String, color: Color, size: int = 26, height: float = 76.0) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(0, height)
+	button.add_theme_font_size_override("font_size", size)
+	button.add_theme_color_override("font_color", INK)
+	button.add_theme_color_override("font_hover_color", INK)
+	button.add_theme_color_override("font_pressed_color", INK)
+	button.add_theme_stylebox_override("normal", _box(color))
+	button.add_theme_stylebox_override("hover", _box(color.lightened(0.12)))
+	button.add_theme_stylebox_override("pressed", _box(color.darkened(0.18)))
+	button.add_theme_stylebox_override("focus", _box(color, 3))
+	return button
 
 
-func _new_game() -> void:
-	game = LudoEngine.new(4, 1)
-	cooldown = 0.0
-	pending_auto = -1
-	view.set_game(game)
-	view.set_legal([])
-	roll_button.text = "ROLL"
-	_refresh()
+func _box(color: Color, border: int = 0) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.set_corner_radius_all(18)
+	box.content_margin_left = 18
+	box.content_margin_right = 18
+	box.content_margin_top = 10
+	box.content_margin_bottom = 10
+	if border > 0:
+		box.border_width_left = border
+		box.border_width_right = border
+		box.border_width_top = border
+		box.border_width_bottom = border
+		box.border_color = INK
+	return box
 
 
-func _on_roll_pressed() -> void:
-	if game == null or game.is_over():
-		return
-	if game.phase != LudoEngine.Phase.AWAITING_ROLL:
-		return
-	if bool(game.active()["is_bot"]):
-		return
-	if cooldown > 0.0:
-		return
-	_do_roll(rng.randi_range(1, 6))
+func _column(parent: Control, separation: int = 14) -> VBoxContainer:
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 26)
+	margin.add_theme_constant_override("margin_right", 26)
+	margin.add_theme_constant_override("margin_top", 30)
+	margin.add_theme_constant_override("margin_bottom", 30)
+	parent.add_child(margin)
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", separation)
+	margin.add_child(vbox)
+	return vbox
 
 
-func _do_roll(die: int) -> void:
-	var result := game.roll(die)
-	if not bool(result["ok"]):
-		return
-	roll_button.text = "DICE  %d" % die
-	var legal: Array = result["legal"]
-	view.set_legal(legal)
-	pending_auto = -1
-	if game.is_over():
-		_refresh()
-		return
-	if game.phase == LudoEngine.Phase.AWAITING_MOVE:
-		if legal.size() == 1 and not bool(game.active()["is_bot"]):
-			pending_auto = int(legal[0])
-	_refresh()
+# ---------------------------------------------------------------- home screen
+
+func _show_home() -> void:
+	var root := Control.new()
+	_background(root)
+	var vbox := _column(root, 16)
+
+	vbox.add_child(_label("LUDO", 64, GOLD))
+	vbox.add_child(_label("LEGENDS", 34, INK))
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 22)
+	vbox.add_child(spacer)
+
+	var computer := _button("Play vs Computer", BLUE, 28, 84)
+	computer.pressed.connect(_show_setup.bind("computer"))
+	vbox.add_child(computer)
+
+	var local := _button("Local — play with family", GREEN, 26, 84)
+	local.pressed.connect(_show_setup.bind("local"))
+	vbox.add_child(local)
+
+	var random := _button("Online — random player", RED, 26, 76)
+	random.pressed.connect(_show_online.bind("random"))
+	vbox.add_child(random)
+
+	var friend := _button("Online — invite friend", YELLOW.darkened(0.15), 26, 76)
+	friend.pressed.connect(_show_online.bind("friend"))
+	vbox.add_child(friend)
+
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 14)
+	vbox.add_child(spacer2)
+	vbox.add_child(_label("Offline modes work without internet.", 18, DIM))
+
+	_swap(root)
 
 
-func _do_move(token_index: int) -> void:
-	var result := game.move_token(token_index)
-	if not bool(result["ok"]):
-		return
-	view.set_legal([])
-	pending_auto = -1
-	_refresh()
+# --------------------------------------------------------------- setup screen
+
+func _show_setup(mode: String) -> void:
+	var root := Control.new()
+	_background(root)
+	var vbox := _column(root, 14)
+
+	var title := "Play vs Computer" if mode == "computer" else "Local game"
+	vbox.add_child(_label(title, 34, GOLD))
+	vbox.add_child(_label("Kitne players?", 22, DIM))
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 12)
+	vbox.add_child(spacer)
+
+	for count in [2, 3, 4]:
+		var label := "%d players" % count
+		if mode == "computer":
+			label = "You + %d bot%s" % [count - 1, "" if count == 2 else "s"]
+		var button := _button(label, BLUE if mode == "computer" else GREEN, 26, 78)
+		button.pressed.connect(_start_game.bind(mode, count))
+		vbox.add_child(button)
+
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 16)
+	vbox.add_child(spacer2)
+	var back := _button("Back", Color("#3A3630"), 22, 60)
+	back.pressed.connect(_show_home)
+	vbox.add_child(back)
+
+	_swap(root)
 
 
-func _on_token_tapped(token_index: int) -> void:
-	if game == null or game.is_over():
-		return
-	if game.phase != LudoEngine.Phase.AWAITING_MOVE:
-		return
-	if bool(game.active()["is_bot"]):
-		return
-	_do_move(token_index)
+func _start_game(mode: String, seat_count: int) -> void:
+	var game_screen := GameScreen.new()
+	game_screen.setup(seat_count, 1 if mode == "computer" else seat_count, mode)
+	game_screen.exit_requested.connect(_show_home)
+	_swap(game_screen)
 
 
-func _process(delta: float) -> void:
-	if game == null or game.is_over():
-		return
-	if cooldown > 0.0:
-		cooldown = maxf(0.0, cooldown - delta)
-		return
+# -------------------------------------------------------------- online screens
 
-	if game.phase == LudoEngine.Phase.AWAITING_ROLL:
-		if bool(game.active()["is_bot"]):
-			cooldown = 0.65
-			_do_roll(rng.randi_range(1, 6))
-	elif game.phase == LudoEngine.Phase.AWAITING_MOVE:
-		if bool(game.active()["is_bot"]):
-			cooldown = 0.5
-			var move := LudoAI.choose_move(game)
-			if not move.is_empty():
-				_do_move(int(move["token"]))
-		elif pending_auto >= 0:
-			cooldown = 0.35
-			var token := pending_auto
-			pending_auto = -1
-			_do_move(token)
+func _show_online(mode: String) -> void:
+	var root := Control.new()
+	_background(root)
+	var vbox := _column(root, 14)
 
+	var title := "Online — random player" if mode == "random" else "Online — invite friend"
+	vbox.add_child(_label(title, 30, GOLD))
+	vbox.add_child(_label(
+		"Online khelne ke liye game server chahiye.\n\n" +
+		"Server code isi repo ke server/ folder me hai (ASP.NET Core + WebSocket rooms). " +
+		"Jab wo kisi host par deploy ho jaye, yahan uska URL daal ke khelna shuru ho jayega.",
+		20, INK))
 
-func _refresh() -> void:
-	if game.is_over():
-		var winner := int(game.winner_seat)
-		var name: String = "Nobody" if winner < 0 else str(game.seats[winner]["name"])
-		status_label.text = "%s won! Tap New game to play again." % name
-		roll_button.disabled = true
-		roll_button.text = "GAME OVER"
-		return
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 18)
+	vbox.add_child(spacer)
 
-	var seat := game.active()
-	var is_bot := bool(seat["is_bot"])
-	var seat_name := str(seat["name"])
-	var home_count := game.tokens_home(seat)
+	var back := _button("Back", Color("#3A3630"), 22, 64)
+	back.pressed.connect(_show_home)
+	vbox.add_child(back)
 
-	if game.phase == LudoEngine.Phase.AWAITING_ROLL:
-		if is_bot:
-			status_label.text = "%s is rolling…  (%d/4 home)" % [seat_name, home_count]
-			roll_button.disabled = true
-		else:
-			status_label.text = "Your turn — tap ROLL  (%d/4 home)" % home_count
-			roll_button.disabled = false
-	elif game.phase == LudoEngine.Phase.AWAITING_MOVE:
-		if is_bot:
-			status_label.text = "%s is moving…" % seat_name
-			roll_button.disabled = true
-		else:
-			status_label.text = "Rolled %d — tap a glowing token" % game.last_die
-			roll_button.disabled = true
+	_swap(root)
