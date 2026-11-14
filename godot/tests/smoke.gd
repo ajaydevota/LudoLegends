@@ -66,5 +66,40 @@ func _initialize() -> void:
 		push_error("Exact roll to home must be legal")
 		failures += 1
 
+
+	# ---- Board geometry must match the reference board -------------------
+	var expected_starts := [Vector2i(1, 6), Vector2i(8, 1), Vector2i(6, 13), Vector2i(13, 8)]
+	for color in 4:
+		var start_cell := Topology.progress_cell(color, 0)
+		if start_cell != expected_starts[color]:
+			push_error("Start square for colour %d is %s, expected %s" % [color, start_cell, expected_starts[color]])
+			failures += 1
+		var last_cell := Topology.progress_cell(color, Topology.LAST_TRACK)
+		var entry_cell := Topology.progress_cell(color, Topology.LAST_TRACK + 1)
+		if last_cell.distance_to(entry_cell) > 2.0:
+			push_error("Home column entry for colour %d is not near the last ring cell" % color)
+			failures += 1
+		var column_cells := []
+		for index in Topology.HOME_COL:
+			column_cells.append(Topology.progress_cell(color, Topology.LAST_TRACK + 1 + index))
+		if column_cells.size() != 5:
+			push_error("Colour %d must have 5 home column cells" % color)
+			failures += 1
+		var home := Topology.progress_cell(color, Topology.PROGRESS_HOME)
+		if home != Vector2i(7, 7):
+			push_error("Home cell for colour %d must be the centre" % color)
+			failures += 1
+		# The start square is always a safe square.
+		if not Topology.is_safe_cell(Topology.absolute_cell(color, 0)):
+			push_error("Start square for colour %d is not marked safe" % color)
+			failures += 1
+		# Eight cells after the start is the second safe square of that colour.
+		if not Topology.is_safe_cell(Topology.absolute_cell(color, 8)):
+			push_error("Star square for colour %d is not marked safe" % color)
+			failures += 1
+	if Topology.SAFE_CELLS.size() != 8:
+		push_error("There must be exactly 8 safe squares")
+		failures += 1
+
 	print("SMOKE RESULT failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
