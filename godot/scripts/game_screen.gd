@@ -5,7 +5,7 @@ extends Control
 
 signal exit_requested
 
-const COLOR_NAMES := ["Red", "Blue", "Green", "Yellow"]
+const COLOR_NAMES := ["Red", "Blue", "Green", "Orange"]
 const INK := Color("#F5EFE3")
 
 var seat_count := 4
