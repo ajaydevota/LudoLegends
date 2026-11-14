@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compiles every runtime script of the Unity client against a hand-written stub of the
+    UnityEngine API, with no Unity Editor present.
+
+    What this proves: the C# is syntactically valid, every type/member the client calls on
+    its own classes exists with a compatible signature, namespaces resolve, and there are no
+    duplicate members. What it does NOT prove: Unity-specific behaviour, serialization,
+    rendering, or that the stubs match Unity's real signatures in every detail.
+
+    Editor-only code is excluded (it is wrapped in #if UNITY_EDITOR, which is not defined).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>LudoLegends.UnityCompileCheck</AssemblyName>
+    <NoWarn>$(NoWarn);CS0649;CS0169;CS0414;CS0067;CS0108;CS0114;CS1998;CS0162</NoWarn>
+    <!-- UNITY_EDITOR enables Assets/Scripts/Editor/BuildScript.cs so it is type-checked too. -->
+    <DefineConstants>$(DefineConstants);UNITY_EDITOR</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Stubs/**/*.cs" />
+    <Compile Include="../LudoLegends/Assets/Scripts/**/*.cs" />
+  </ItemGroup>
+
+</Project>
