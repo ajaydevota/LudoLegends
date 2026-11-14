@@ -1,0 +1,48 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  buildAndroid:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - uses: actions/cache@v4
+        with:
+          path: unity/LudoLegends/Library
+          key: Library-Android-${{ hashFiles('unity/LudoLegends/Assets/**', 'unity/LudoLegends/Packages/**', 'unity/LudoLegends/ProjectSettings/**') }}
+          restore-keys: |
+            Library-Android-
+
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          large-packages: false
+
+      - name: Build APK
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity/LudoLegends
+          buildMethod: LudoLegends.EditorTools.BuildScript.BuildApkFromCI
+          targetPlatform: Android
+          unityVersion: auto
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LudoLegends-apk
+          path: unity/LudoLegends/Build
+          if-no-files-found: error
