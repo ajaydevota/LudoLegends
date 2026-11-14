@@ -1,0 +1,70 @@
+extends SceneTree
+
+## Headless smoke test: plays many full games with the AI driving every seat and
+## checks the core invariants of the rules engine.
+
+func _initialize() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12345
+	var failures := 0
+	for game_index in 120:
+		var seats := 2 + (game_index % 3)
+		var game := LudoEngine.new(seats, 0)
+		var guard := 0
+		while not game.is_over() and guard < 20000:
+			guard += 1
+			if game.phase == LudoEngine.Phase.AWAITING_ROLL:
+				game.roll(rng.randi_range(1, 6))
+			elif game.phase == LudoEngine.Phase.AWAITING_MOVE:
+				var move := LudoAI.choose_move(game)
+				if move.is_empty():
+					push_error("AwaitingMove with no legal move (game %d)" % game_index)
+					failures += 1
+					break
+				game.move_token(int(move["token"]))
+			for seat in game.seats:
+				for progress in seat["tokens"]:
+					var value := int(progress)
+					if value < -1 or value > Topology.PROGRESS_HOME:
+						push_error("Token out of range: %d" % value)
+						failures += 1
+		if not game.is_over():
+			push_error("Game %d did not finish (guard hit)" % game_index)
+			failures += 1
+		elif game.winner_seat < 0:
+			push_error("Game %d finished without a winner" % game_index)
+			failures += 1
+
+	# Deterministic rule checks
+	var g2 := LudoEngine.new(4, 0)
+	g2.roll(6)
+	if g2.phase != LudoEngine.Phase.AWAITING_MOVE:
+		push_error("A 6 with tokens in base must allow a move")
+		failures += 1
+	var moves := g2.legal_moves()
+	if moves.size() != 4:
+		push_error("Expected 4 legal base moves, got %d" % moves.size())
+		failures += 1
+	g2.move_token(0)
+	if int(g2.seats[0]["tokens"][0]) != 0:
+		push_error("Leaving base must land on progress 0")
+		failures += 1
+	if g2.active_seat != 0:
+		push_error("A six must grant an extra turn")
+		failures += 1
+
+	# Exact roll to home: progress 55 + 3 must be illegal
+	var g3 := LudoEngine.new(2, 0)
+	g3.seats[0]["tokens"] = [55, -1, -1, -1]
+	g3.phase = LudoEngine.Phase.AWAITING_MOVE
+	g3.last_die = 3
+	if not g3.legal_moves().is_empty():
+		push_error("Overshooting home must be illegal")
+		failures += 1
+	g3.last_die = 2
+	if g3.legal_moves().size() != 1:
+		push_error("Exact roll to home must be legal")
+		failures += 1
+
+	print("SMOKE RESULT failures=%d" % failures)
+	quit(0 if failures == 0 else 1)
