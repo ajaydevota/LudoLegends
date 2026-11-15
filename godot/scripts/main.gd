@@ -124,7 +124,9 @@ func _back_button(root: Control, action: Callable) -> void:
 	button.add_theme_stylebox_override("normal", _box(Color(1, 1, 1, 0.07)))
 	button.add_theme_stylebox_override("hover", _box(Color(1, 1, 1, 0.14)))
 	button.add_theme_stylebox_override("pressed", _box(Color(1, 1, 1, 0.2)))
-	button.pressed.connect(action)
+	button.pressed.connect(func() -> void:
+		Sfx.play("click", -8.0)
+		action.call())
 	root.add_child(button)
 	button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	button.position = Vector2(20, 20)
@@ -147,15 +149,21 @@ func _show_home() -> void:
 	column.add_child(computer)
 
 	var local := _button("Local — play with family", GREEN)
-	local.pressed.connect(_show_setup.bind("local"))
+	local.pressed.connect(func() -> void:
+		Sfx.play("click", -8.0)
+		_show_setup("local"))
 	column.add_child(local)
 
 	var random := _button("Online — random player", RED)
-	random.pressed.connect(_show_online.bind("random"))
+	random.pressed.connect(func() -> void:
+		Sfx.play("click", -8.0)
+		_show_online("random"))
 	column.add_child(random)
 
 	var friend := _button("Online — invite friend", ORANGE)
-	friend.pressed.connect(_show_online.bind("friend"))
+	friend.pressed.connect(func() -> void:
+		Sfx.play("click", -8.0)
+		_show_online("friend"))
 	column.add_child(friend)
 
 	_spacer(column, 22)
@@ -178,7 +186,9 @@ func _show_setup(mode: String) -> void:
 		if mode == "computer":
 			label = "You + %d bot%s" % [count - 1, "" if count == 2 else "s"]
 		var button := _button(label, BLUE if mode == "computer" else GREEN, 25, 78)
-		button.pressed.connect(_start_game.bind(mode, count))
+		button.pressed.connect(func() -> void:
+			Sfx.play("click", -8.0)
+			_start_game(mode, count))
 		column.add_child(button)
 
 
